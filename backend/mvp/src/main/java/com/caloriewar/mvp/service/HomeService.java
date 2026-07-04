@@ -29,7 +29,8 @@ public class HomeService {
                         s.getUser().getNickname(),
                         s.getStartLatitude(),
                         s.getStartLongitude(),
-                        calculateRadius(s.getTotalScore()),
+                        s.getTotalScore(),
+                        null,           // radius는 /working/score 전용
                         s.getTeamColor()
                 ))
                 .toList();
@@ -39,7 +40,6 @@ public class HomeService {
         }
 
         UserGameStatus mine = userGameStatusRepository.findById(userId).orElseThrow();
-
         return new HomeResponse(
                 mine.getUser().getNickname(),
                 mine.getTotalScore(),
