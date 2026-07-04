@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 
 // 위치 확보 전에도 지도를 먼저 그리기 위한 폴백 ( 서울시청 )
 const FALLBACK = { lat: 37.5665, lng: 126.978 };

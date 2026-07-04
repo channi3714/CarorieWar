@@ -2,7 +2,7 @@
 import Client from './client';
 
 // 백엔드 준비 전에는 true 로 두고 화면 개발, 연동 시 false
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 // POST /login - 닉네임 + 비밀번호로 로그인
 export async function login(nickname, password) {

@@ -15,12 +15,27 @@ function Home() {
 
   const [Home_, setHome] = useState(null);
   useEffect(() => {
-    getHome().then(setHome).catch(() => {});
+    const refresh = () => getHome().then(setHome).catch(() => {});
+    refresh();
+    const id = setInterval(refresh, 3000);
+    return () => clearInterval(id);
   }, []);
 
   return (
     <Page>
-      <KakaoMap center={coords} level={2} players={Home_?.nearbyPlayers ?? []} />
+      <KakaoMap
+        center={coords}
+        level={2}
+        players={Home_?.nearbyPlayers ?? []}
+        myCircle={coords && Home_ ? {
+          lat: coords.lat,
+          lng: coords.lng,
+          radius: 5 + (Home_.totalScore ?? 0) * 0.05,
+          color: Home_?.teamColor ?? '#FF5733',
+          label: '나',
+          icon: '',
+        } : null}
+      />
 
       <TopLogo>
         <Logo size="sm" />

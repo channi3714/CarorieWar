@@ -2,7 +2,7 @@
 export const ROUTES = {
   LOGIN: '/login',
   SIGNUP: '/signup',
-  HOME: '/',
+  HOME: '/home',
   WORK_LIST: '/works',
   WORK_ADD: '/works/add',
   WORKING: '/working',

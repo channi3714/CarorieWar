@@ -2,7 +2,7 @@ import Client from './client';
 import { AllExercises, ExerciseColors } from '../mocks/exercises';
 
 // 백엔드 준비 전에는 true 로 두고 화면 개발, 연동 시 false
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 // 목업 전용 인메모리 상태 ( 새로고침하면 초기화됨 )
 // isAdded 가 true 인 운동이 곧 내 운동 리스트

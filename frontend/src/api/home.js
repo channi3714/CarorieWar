@@ -1,7 +1,7 @@
 import Client from './client';
 import { iconOf } from '../assets/icons';
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 function delay(ms = 250) {
   return new Promise((resolve) => setTimeout(resolve, ms));

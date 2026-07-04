@@ -27,7 +27,7 @@ function Login() {
     setError('');
     try {
       const Data = await login(nickname, password);
-      setLogin({ userId: Data.userId, nickname: Data.nickname }, Data.accessToken);
+      setLogin({ userId: Data.userId, nickname: Data.nickname });
       navigate(ROUTES.HOME, { replace: true });
     } catch (err) {
       const Message = err.response?.data?.message ?? '로그인에 실패했습니다';
