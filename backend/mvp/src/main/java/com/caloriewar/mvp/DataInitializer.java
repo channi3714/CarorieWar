@@ -39,12 +39,12 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         // 운동 6종
-        Exercise walk = createExercise("제자리걸음", 30);
-        Exercise squat = createExercise("스쿼트", 50);
-        Exercise swim = createExercise("수영", 60);
-        Exercise pilates = createExercise("필라테스", 40);
-        Exercise running = createExercise("러닝", 70);
-        Exercise cycling = createExercise("자전거", 55);
+        Exercise walk = createExercise("제자리걸음", 150);
+        Exercise squat = createExercise("스쿼트", 250);
+        Exercise swim = createExercise("수영", 300);
+        Exercise pilates = createExercise("필라테스", 700);
+        Exercise running = createExercise("러닝", 350);
+        Exercise cycling = createExercise("자전거", 550);
 
         // 기준 유저 (서강대학교 인근)
         User mockUser = createUser("칼로리요정", "password123!");
