@@ -22,26 +22,40 @@ const PinIcon = L.divIcon({
 });
 
 // 원 중심 라벨 ( 아이콘 이미지 + 텍스트, 아이콘 중심이 좌표에 오도록 )
+// iconUrl 이 있으면( 내 운동 ) 흰 배지 + 운동 아이콘,
+// 없으면( 상대 플레이어 - 백엔드가 운동 종류를 안 줌 ) 팀색으로 꽉 찬 사람 마커로 또렷하게 표시
 function labelIcon(iconUrl, text, color) {
+  const Badge = iconUrl
+    ? `<div style="
+          width:28px;height:28px;border-radius:50%;background:#fff;
+          border:2px solid ${color};display:flex;align-items:center;justify-content:center;
+          box-shadow:0 2px 6px rgba(0,0,0,0.25)">
+          <img src="${iconUrl}" onerror="this.style.display='none'"
+               style="width:16px;height:16px;object-fit:contain" />
+        </div>`
+    : `<div style="
+          width:28px;height:28px;border-radius:50%;background:${color};
+          border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;
+          box-shadow:0 0 0 1.5px ${color},0 2px 6px rgba(0,0,0,0.35)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="#fff">
+            <path d="M12 12a4.2 4.2 0 1 0-4.2-4.2A4.2 4.2 0 0 0 12 12Zm0 2.1c-3.4 0-7 1.7-7 4.6v1.4h14v-1.4c0-2.9-3.6-4.6-7-4.6Z"/>
+          </svg>
+        </div>`;
+
   return L.divIcon({
     className: 'circle-label',
     html: `
-      <div style="position:relative;width:80px;height:34px">
-        <div style="
-          position:absolute;left:50%;top:0;transform:translateX(-50%);
-          width:34px;height:34px;border-radius:50%;background:#fff;
-          border:2px solid ${color};display:flex;align-items:center;justify-content:center;
-          box-shadow:0 2px 6px rgba(0,0,0,0.2)">
-          <img src="${iconUrl}" onerror="this.style.display='none'"
-               style="width:20px;height:20px;object-fit:contain" />
+      <div style="position:relative;width:80px;height:28px">
+        <div style="position:absolute;left:50%;top:0;transform:translateX(-50%)">
+          ${Badge}
         </div>
         <div style="
-          position:absolute;left:50%;top:38px;transform:translateX(-50%);
+          position:absolute;left:50%;top:31px;transform:translateX(-50%);
           font-size:11px;font-weight:700;color:#333;white-space:nowrap;
           text-shadow:0 0 3px #fff,0 0 3px #fff">${text}</div>
       </div>`,
-    iconSize: [80, 34],
-    iconAnchor: [40, 17], // 박스 중앙 = 아이콘 원 중심을 좌표에 맞춤
+    iconSize: [80, 28],
+    iconAnchor: [40, 14], // 배지 중심을 좌표에 맞춤
   });
 }
 

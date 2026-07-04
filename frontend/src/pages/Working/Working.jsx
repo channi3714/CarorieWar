@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { FaTrophy, FaWalking, FaPause } from 'react-icons/fa';
 import KakaoMap from '../../components/map/KakaoMap';
 import Footer from '../../components/common/Footer';
 import useGeolocation from '../../hooks/useGeolocation';
 import useSessionStore from '../../store/useSessionStore';
+import useWorkStore from '../../store/useWorkStore';
 import { getWorking, startWorking, postScore, finishWorking } from '../../api/working';
 import { ROUTES } from '../../constants/routes';
 import { iconOf } from '../../assets/icons';
@@ -32,12 +33,16 @@ function Working() {
   const center = useSessionStore((s) => s.center);
   const totalScore = useSessionStore((s) => s.totalScore);
   const myRadius = useSessionStore((s) => s.myRadius);
+  const myColor = useSessionStore((s) => s.myColor);
   const players = useSessionStore((s) => s.players);
+
+  const addRecord = useWorkStore((s) => s.addRecord);
 
   const [elapsed, setElapsed] = useState(0);
   const [event, setEvent] = useState(null); // { type, opponent }
   const [error, setError] = useState('');
   const startedFixRef = useRef(false);
+  const eventTimerRef = useRef(null); // 이벤트 토스트 자동 사라짐 타이머
 
   // 진입 - 선택된 운동 확인
   useEffect(() => {
@@ -95,8 +100,14 @@ function Working() {
           totalScore: Res.totalScore,
           myRadius: Res.myRadius,
           players: Res.nearbyPlayers,
+          myColor: Res.myTeamColor, // 정복당하면 서버가 상대 색으로 바꿔서 내려줌
         });
-        if (Res.eventType) setEvent({ type: Res.eventType, opponent: Res.eventOpponentNickname });
+        // 충돌/정복 이벤트 → 토스트로 띄우고 2.5초 뒤 자동으로 사라지게
+        if (Res.eventType) {
+          setEvent({ type: Res.eventType, opponent: Res.eventOpponentNickname });
+          clearTimeout(eventTimerRef.current);
+          eventTimerRef.current = setTimeout(() => setEvent(null), 2500);
+        }
       } catch {
         /* 폴링 실패는 조용히 무시하고 다음 주기 재시도 */
       }
@@ -107,14 +118,26 @@ function Working() {
     return () => {
       Alive = false;
       clearInterval(Id);
+      clearTimeout(eventTimerRef.current);
     };
   }, [center, applyScore]);
 
   const handleStop = async () => {
+    // interval 갱신 지연(최대 1초)을 피해 startedAt 기준으로 최종 시간 산출
+    const durationMs = startedAt ? Date.now() - startedAt : elapsed;
+
+    // 로컬에 운동 시간 저장 ( 프론트 영속 - 새로고침에도 유지 )
+    addRecord({
+      exerciseId: exercise?.exerciseId,
+      name: exercise?.name,
+      durationMs,
+      calories: totalScore,
+    });
+
     try {
       await finishWorking({
         exerciseId: exercise?.exerciseId,
-        durationMs: elapsed,
+        durationMs,
         totalScore,
         myRadius,
       });
@@ -132,11 +155,14 @@ function Working() {
         lat: circleCenter.lat,
         lng: circleCenter.lng,
         radius: myRadius,
-        color: '#4CAF50',
+        color: myColor, // 내 팀 색 ( 정복당하면 상대 색으로 바뀜 )
         label: `내가 ${exercise?.name ?? ''} 중`,
         icon: iconOf(exercise?.exerciseId),
       }
     : null;
+
+  // 주변 플레이어 라벨에 운동 아이콘 매핑 ( 백엔드 exerciseId 기준 )
+  const mapPlayers = players.map((P) => ({ ...P, icon: iconOf(P.exerciseId) }));
 
   return (  
     
@@ -144,12 +170,12 @@ function Working() {
       <TopLogo>
         <Logo size="sm" />
       </TopLogo>
-      <KakaoMap center={center ?? coords} level={2} myCircle={MyCircle} players={players} showPin={false} />
+      <KakaoMap center={center ?? coords} level={2} myCircle={MyCircle} players={mapPlayers} showPin={false} />
       {event && (
         <EventBanner $type={event.type}>
-          {event.type === 'MEETING' && `${event.opponent} 와(과) 영역이 맞닿았어요!`}
-          {event.type === 'CONQUERED' && `${event.opponent} 를(을) 정복했어요! 🎉`}
-          {event.type === 'CONQUERED_BY_OPPONENT' && `${event.opponent} 에게 정복당했어요…`}
+          {event.type === 'MEETING' && `${event.opponent}님과 충돌했습니다.`}
+          {event.type === 'CONQUERED' && `${event.opponent}님을 정복했어요! 🎉`}
+          {event.type === 'CONQUERED_BY_OPPONENT' && `${event.opponent}님에게 정복당했어요…`}
         </EventBanner>
       )}
 
@@ -192,6 +218,11 @@ const TopLogo = styled.div`
   pointer-events: none;
 `;
 
+const toastIn = keyframes`
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+`;
+
 const EventBanner = styled.div`
   position: absolute;
   top: 20px;
@@ -205,6 +236,7 @@ const EventBanner = styled.div`
   color: #fff;
   white-space: nowrap;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  animation: ${toastIn} 0.2s ease-out;
   background: ${({ theme, $type }) =>
     $type === 'CONQUERED'
       ? theme.colors.success

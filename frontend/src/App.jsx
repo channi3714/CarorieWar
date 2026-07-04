@@ -19,8 +19,10 @@ function App() {
         <Route path={ROUTES.LOGIN} element={<Login />} />
         <Route path={ROUTES.SIGNUP} element={<SignUp />} />
 
+        {/* 홈(지도)은 로그아웃 상태에서도 볼 수 있고, '운동시작' 시점에 로그인 요구 */}
+        <Route path={ROUTES.HOME} element={<HomeDeck />} />
+
         <Route element={<ProtectedRoute />}>
-          <Route path={ROUTES.HOME} element={<HomeDeck />} />
           <Route path={ROUTES.WORK_LIST} element={<HomeDeck />} />
           <Route path={ROUTES.WORK_ADD} element={<WorkAdd />} />
           <Route path={ROUTES.WORKING} element={<Working />} />

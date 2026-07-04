@@ -7,6 +7,7 @@ const useSessionStore = create((set) => ({
   center: null, // 고정된 시작 좌표 { lat, lng }
   totalScore: 0,
   myRadius: 0,
+  myColor: '#FF5733', // 내 팀 색 ( 서버 myTeamColor 로 갱신, 정복당하면 상대 색으로 바뀜 )
   players: [],
 
   startSession: (exercise, center) => {
@@ -18,12 +19,18 @@ const useSessionStore = create((set) => ({
       center,
       totalScore: score,
       myRadius: 5 + score * 0.05,  // 이전 점수로 초기 반지름 계산
+      myColor: '#FF5733',
       players: [],
     });
   },
 
-  applyScore: ({ totalScore, myRadius, players }) =>
-    set({ totalScore, myRadius, players }),
+  applyScore: ({ totalScore, myRadius, players, myColor }) =>
+    set((state) => ({
+      totalScore,
+      myRadius,
+      players,
+      myColor: myColor ?? state.myColor, // 응답에 없으면 기존 색 유지
+    })),
 
   endSession: () =>
     set({
@@ -33,6 +40,7 @@ const useSessionStore = create((set) => ({
       center: null,
       totalScore: 0,
       myRadius: 0,
+      myColor: '#FF5733',
       players: [],
     }),
 }));

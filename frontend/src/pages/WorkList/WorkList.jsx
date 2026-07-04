@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { FaPlus, FaPlay } from 'react-icons/fa';
 import { getMySports, selectSport, colorOf } from '../../api/sports';
+import useWorkStore, { todayTotalMs, todayExerciseMs } from '../../store/useWorkStore';
+import { formatDuration, formatDurationKo, formatClock } from '../../utils/format';
 import { ROUTES } from '../../constants/routes';
 
 function WorkList() {
@@ -13,6 +15,18 @@ function WorkList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [startingId, setStartingId] = useState(null);
+
+  // 저장된 운동 시간 기록
+  const records = useWorkStore((s) => s.records);
+  const totalMs = useMemo(() => todayTotalMs(records), [records]);
+  // 오늘 운동별 누적 시간 맵 { [exerciseId]: ms }
+  const perExerciseMs = useMemo(() => {
+    const Map = {};
+    MySports.forEach((Ex) => {
+      Map[Ex.exerciseId] = todayExerciseMs(records, Ex.exerciseId);
+    });
+    return Map;
+  }, [records, MySports]);
 
   useEffect(() => {
     let Alive = true;
@@ -55,8 +69,8 @@ function WorkList() {
         </AddButton>
       </Header>
 
-      <TotalTimer>0:00:00</TotalTimer>
-      <TotalSub>0분 0초</TotalSub>
+      <TotalTimer>{formatDuration(totalMs)}</TotalTimer>
+      <TotalSub>{formatDurationKo(totalMs)}</TotalSub>
 
       <Tabs>
         <Tab $active={tab === 'timer'} onClick={() => setTab('timer')}>
@@ -90,11 +104,28 @@ function WorkList() {
                 <Name>{Ex.name}</Name>
                 <Meta>5분 · {Ex.caloriesPerFiveMin} kcal</Meta>
               </Info>
-              <Time>00:00:00</Time>
+              <Time>{formatDuration(perExerciseMs[Ex.exerciseId] ?? 0, { padHours: true })}</Time>
             </Item>
           ))}
 
-        {!loading && tab === 'record' && <Empty>아직 기록이 없습니다</Empty>}
+        {!loading && tab === 'record' && records.length === 0 && (
+          <Empty>아직 기록이 없습니다</Empty>
+        )}
+
+        {!loading &&
+          tab === 'record' &&
+          records.map((R) => (
+            <RecordItem key={R.id}>
+              <Dot style={{ background: colorOf(R.exerciseId) }} />
+              <Info>
+                <Name>{R.name}</Name>
+                <Meta>
+                  {formatClock(R.finishedAt)} · {R.calories} kcal
+                </Meta>
+              </Info>
+              <Time>{formatDuration(R.durationMs, { padHours: true })}</Time>
+            </RecordItem>
+          ))}
       </List>
     </Page>
   );
@@ -172,6 +203,18 @@ const Item = styled.div`
   align-items: center;
   gap: 12px;
   padding: 14px 4px;
+`;
+
+// 기록 탭 항목 ( 시작 버튼 없이 색상 점만 표시 )
+const RecordItem = styled(Item)`
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const Dot = styled.span`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
 `;
 
 // 색깔 동그라미 자체가 시작 버튼

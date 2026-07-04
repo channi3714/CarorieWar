@@ -9,7 +9,8 @@ import { ROUTES } from '../../constants/routes';
 import { useEffect, useState } from 'react';
 import { getHome } from '../../api/home';
 
-function Home() {
+// onStart : 가운데 '운동시작' 버튼을 누르면 부모(HomeDeck)의 바텀시트를 올림
+function Home({ onStart }) {
   const navigate = useNavigate();
   const { coords } = useGeolocation();
 
@@ -21,12 +22,15 @@ function Home() {
     return () => clearInterval(id);
   }, []);
 
+  // 상대 플레이어 ( 백엔드가 운동 종류를 안 주므로 팀색 사람 마커로 표시 - KakaoMap 처리 )
+  const players = Home_?.nearbyPlayers ?? [];
+
   return (
     <Page>
       <KakaoMap
         center={coords}
         level={2}
-        players={Home_?.nearbyPlayers ?? []}
+        players={players}
         myCircle={coords && Home_ ? {
           lat: coords.lat,
           lng: coords.lng,
@@ -46,7 +50,7 @@ function Home() {
       <FooterWrap>
         <Footer
           left={{ icon: <FaTrophy />, label: '랭킹', onClick: () => navigate(ROUTES.RANKING) }}
-          center={{ icon: <FaPlay />, label: '운동시작', variant: 'primary', onClick: () => navigate(ROUTES.WORK_LIST) }}
+          center={{ icon: <FaPlay />, label: '운동시작', variant: 'primary', onClick: onStart }}
           right={{ icon: <FaUser />, label: '마이페이지', onClick: () => navigate(ROUTES.MYPAGE) }}
         />
       </FooterWrap>

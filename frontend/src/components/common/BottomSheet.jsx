@@ -3,8 +3,9 @@ import styled from 'styled-components';
 
 // 지도 위에 떠서 위아래로 끌어올리는 바텀시트
 // peek : 살짝 걸친 높이 / expand : 펼친 높이 ( 화면 대비 % )
-function BottomSheet({ children, peek = 22, expand = 88 }) {
-  const [expanded, setExpanded] = useState(false);
+// offset : 시트 바닥을 화면 하단에서 띄우는 값 ( px, 하단 푸터 높이만큼 비워 버튼을 가리지 않게 )
+function BottomSheet({ children, peek = 22, expand = 88, defaultExpanded = false, offset = 0, onClose }) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const [dragY, setDragY] = useState(0); // 드래그 중 임시 이동 ( px, 음수 = 위로 )
   const [dragging, setDragging] = useState(false);
 
@@ -28,9 +29,12 @@ function BottomSheet({ children, peek = 22, expand = 88 }) {
   const onPointerUp = () => {
     if (!dragging) return;
     setDragging(false);
-    // 위로 40px 이상 끌면 펼침, 아래로 40px 이상이면 접음
+    // 위로 40px 이상 끌면 펼침, 아래로 40px 이상이면 접음 ( 이미 접힌 상태면 닫기 )
     if (dragY < -40) setExpanded(true);
-    else if (dragY > 40) setExpanded(false);
+    else if (dragY > 40) {
+      if (!expanded) onClose?.();
+      else setExpanded(false);
+    }
     setDragY(0);
   };
 
@@ -41,7 +45,7 @@ function BottomSheet({ children, peek = 22, expand = 88 }) {
     <Sheet
       ref={sheetRef}
       $dragging={dragging}
-      style={{ height: Height }}
+      style={{ height: Height, bottom: offset }}
     >
       <HandleZone
         onPointerDown={onPointerDown}
