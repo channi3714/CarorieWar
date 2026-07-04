@@ -90,6 +90,7 @@ public class WorkingService {
                     other.getUser().getNickname(),
                     theirLat,
                     theirLng,
+                    other.getTotalScore(),
                     theirRadius,
                     other.getTeamColor()
             ));
