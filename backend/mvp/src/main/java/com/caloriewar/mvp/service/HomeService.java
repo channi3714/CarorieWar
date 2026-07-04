@@ -26,13 +26,17 @@ public class HomeService {
             .filter(s -> !s.getUserId().equals(userId))
             .map(s -> {
                 double radius = 5.0 + s.getTotalScore() * 0.05;
+                Long exId = s.getCurrentExercise() != null ? s.getCurrentExercise().getId() : null;
+                String exName = s.getCurrentExercise() != null ? s.getCurrentExercise().getName() : null;
                 return new NearbyPlayerDto(
                     s.getUser().getNickname(),
                     s.getStartLatitude(),
                     s.getStartLongitude(),
                     s.getTotalScore(),
                     radius,
-                    s.getTeamColor()
+                    s.getTeamColor(),
+                    exId,
+                    exName
                 );
             })
             .toList();

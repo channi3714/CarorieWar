@@ -12,6 +12,7 @@ import java.util.List;
 public class ScoreResponse {
     private Integer totalScore;
     private Double myRadius;
+    private String myTeamColor;
     private List<NearbyPlayerDto> nearbyPlayers;
     private String eventType;
     private String eventOpponentNickname;
