@@ -13,7 +13,7 @@ spring:
       path: /h2-console # 서버 실행 후 브라우저로 DB를 볼 수 있는 주소
   jpa:
     hibernate:
-      ddl-auto: update # 엔티티 코드를 수정하면 DB 테이블에 바로 반영
+      ddl-auto: create # update # 엔티티 코드를 수정하면 DB 테이블에 바로 반영
     show-sql: true     # 실행되는 SQL을 터미널에 출력
     properties:
       hibernate:
