@@ -1,12 +1,17 @@
 package com.caloriewar.mvp;
+
 import com.caloriewar.mvp.domain.Exercise;
 import com.caloriewar.mvp.domain.User;
+import com.caloriewar.mvp.domain.UserExercise;
 import com.caloriewar.mvp.domain.UserGameStatus;
 import com.caloriewar.mvp.repository.ExerciseRepository;
+import com.caloriewar.mvp.repository.UserExerciseRepository;
 import com.caloriewar.mvp.repository.UserGameStatusRepository;
 import com.caloriewar.mvp.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -14,24 +19,26 @@ public class DataInitializer implements CommandLineRunner {
     private final ExerciseRepository exerciseRepository;
     private final UserRepository userRepository;
     private final UserGameStatusRepository userGameStatusRepository;
+    private final UserExerciseRepository userExerciseRepository;
 
     public DataInitializer(ExerciseRepository exerciseRepository,
                            UserRepository userRepository,
-                           UserGameStatusRepository userGameStatusRepository) {
+                           UserGameStatusRepository userGameStatusRepository,
+                           UserExerciseRepository userExerciseRepository) {
         this.exerciseRepository = exerciseRepository;
         this.userRepository = userRepository;
         this.userGameStatusRepository = userGameStatusRepository;
+        this.userExerciseRepository = userExerciseRepository;
     }
 
     @Override
-    public void run(String... args) throws Exception {
-        // [방어 코드] 상위 ddl-auto가 create가 아닐 때를 대비해 중복 실행 방지
+    public void run(String... args) {
         if (exerciseRepository.count() > 0) {
             System.out.println("====== 이미 시드 데이터가 존재하므로 초기화를 건너뜁니다 ======");
             return;
         }
 
-        // 1. 새 ERD 스키마 요구사항 반영 운동 6종 세팅
+        // 운동 6종
         Exercise walk = createExercise("제자리걸음", 30);
         Exercise squat = createExercise("스쿼트", 50);
         Exercise swim = createExercise("수영", 60);
@@ -39,33 +46,75 @@ public class DataInitializer implements CommandLineRunner {
         Exercise running = createExercise("러닝", 70);
         Exercise cycling = createExercise("자전거", 55);
 
-        // 2. 1번 사용자(Users 테이블) 생성
-        User mockUser = new User();
-        mockUser.setName("오창엽");
-        mockUser.setNickname("칼로리요정");
-        mockUser.setPassword("password123!"); // 가짜 로그인 식별용 비번
-        mockUser.setEmail("test@test.com");
-        userRepository.save(mockUser);
+        // 기준 유저 (서강대학교 인근)
+        User mockUser = createUser("칼로리요정", "password123!");
+        UserGameStatus mockStatus = createGameStatus(mockUser, 0, "#FF5733", false, 37.555, 126.937, null);
+        addUserExercise(mockUser, squat, false);
+        addUserExercise(mockUser, walk, false);
 
-        // 3. 🔥 핵심 변경 사항: 1번 사용자의 실시간 게임 상태(UserGameStatus) 생성
-        UserGameStatus gameStatus = new UserGameStatus();
-        gameStatus.setUser(mockUser);              // User 객체와 1:1 매핑 연결 (PK가 자동으로 mockUser의 id와 같아짐)
-        gameStatus.setTotalScore(0);               // 초기 점수 0
-        gameStatus.setTeamColor("#FF5733");         // 기본 팀 컬러
-        gameStatus.setCurrentExercise(null);       // ◀️ 대기 상태이므로 실시간 운동은 null!
-        gameStatus.setIsWorking(false);            // 운동 중 아님
-        gameStatus.setStartLatitude(37.555);       // 해커톤 행사장 위도 디폴트
-        gameStatus.setStartLongitude(126.937);     // 해커톤 행사장 경도 디폴트
-        userGameStatusRepository.save(gameStatus);
+        // 더미 유저들 — isWorking=true, 운동 중 상태로 세팅
+        // 각각 기준 유저로부터 다른 거리에 배치
+        User dummy1 = createUser("불꽃전사", "pw1");
+        // 약 140m 북동 (기준 원과 겹칠 수 있는 가까운 거리)
+        createGameStatus(dummy1, 200, "#3399FF", true, 37.5563, 126.9383, squat);
+        addUserExercise(dummy1, squat, true);
 
-        System.out.println("====== 새 ERD 기준 1:1 매핑 시드 데이터 로딩 완벽 성공 ======");
+        User dummy2 = createUser("근육왕", "pw2");
+        // 약 200m 남서
+        createGameStatus(dummy2, 150, "#33FF99", true, 37.5535, 126.9353, running);
+        addUserExercise(dummy2, running, true);
+
+        User dummy3 = createUser("다이어트퀸", "pw3");
+        // 약 350m 북서
+        createGameStatus(dummy3, 80, "#FF33CC", true, 37.5582, 126.9342, walk);
+        addUserExercise(dummy3, walk, true);
+
+        User dummy4 = createUser("칼로리파괴자", "pw4");
+        // 약 500m 동쪽
+        createGameStatus(dummy4, 300, "#FFD700", true, 37.5551, 126.9415, cycling);
+        addUserExercise(dummy4, cycling, true);
+
+        User dummy5 = createUser("운동천재", "pw5");
+        // 약 700m 남쪽
+        createGameStatus(dummy5, 500, "#9933FF", true, 37.5487, 126.9371, pilates);
+        addUserExercise(dummy5, pilates, true);
+
+        System.out.println("====== 시드 데이터 초기화 완료 (기준 유저 1명 + 더미 유저 5명) ======");
     }
 
-    // 운동 생성을 간결하게 도와주는 헬퍼 메서드
     private Exercise createExercise(String name, int calories) {
-        Exercise exercise = new Exercise();
-        exercise.setName(name);
-        exercise.setCaloriesPerFiveMin(calories);
-        return exerciseRepository.save(exercise);
+        Exercise e = new Exercise();
+        e.setName(name);
+        e.setCaloriesPerFiveMin(calories);
+        return exerciseRepository.save(e);
+    }
+
+    private User createUser(String nickname, String password) {
+        User u = new User();
+        u.setNickname(nickname);
+        u.setPassword(password);
+        return userRepository.save(u);
+    }
+
+    private UserGameStatus createGameStatus(User user, int score, String color,
+                                            boolean isWorking, double lat, double lng,
+                                            Exercise currentExercise) {
+        UserGameStatus s = new UserGameStatus();
+        s.setUser(user);
+        s.setTotalScore(score);
+        s.setTeamColor(color);
+        s.setIsWorking(isWorking);
+        s.setStartLatitude(lat);
+        s.setStartLongitude(lng);
+        s.setCurrentExercise(currentExercise);
+        return userGameStatusRepository.save(s);
+    }
+
+    private void addUserExercise(User user, Exercise exercise, boolean isSelected) {
+        UserExercise ue = new UserExercise();
+        ue.setUser(user);
+        ue.setExercise(exercise);
+        ue.setIsSelected(isSelected);
+        userExerciseRepository.save(ue);
     }
 }

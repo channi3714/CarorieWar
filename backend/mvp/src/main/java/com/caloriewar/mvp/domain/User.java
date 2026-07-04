@@ -19,7 +19,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50)
+    @Column(length = 50)
     private String name;
 
     @Column(nullable = false, length = 30)
@@ -28,7 +28,7 @@ public class User {
     @Column(nullable = false, length = 255)
     private String password;
 
-    @Column(nullable = false, length = 100)
+    @Column(length = 100)
     private String email;
 
     @Column(name = "created_at", nullable = false, updatable = false, insertable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")

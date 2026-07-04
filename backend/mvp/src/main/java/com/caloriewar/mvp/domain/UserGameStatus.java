@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "user_game_status")
 @Getter @Setter
@@ -39,10 +37,7 @@ public class UserGameStatus {
     @Column(name = "start_longitude")
     private Double startLongitude;
 
-    @Column(name = "updated_at", nullable = false, insertable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
-    private LocalDateTime updatedAt;
-
-    // 💡 편의 비즈니스 메서드 추가
+    // 편의 비즈니스 메서드
     public void startExercise(Exercise exercise, Double lat, Double lng) {
         this.currentExercise = exercise;
         this.isWorking = true;
