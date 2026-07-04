@@ -11,6 +11,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ScoreResponse {
     private Integer totalScore;
+    private Double myRadius;
     private List<NearbyPlayerDto> nearbyPlayers;
     private String eventType;
     private String eventOpponentNickname;

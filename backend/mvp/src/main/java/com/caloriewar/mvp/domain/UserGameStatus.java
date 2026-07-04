@@ -4,17 +4,22 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 @Entity
 @Table(name = "user_game_status")
 @Getter @Setter
 @NoArgsConstructor
 public class UserGameStatus {
 
+    // 반지름 계산 상수 (게임 밸런스 조정 시 여기만 고치면 됨)
+    private static final double BASE_RADIUS = 5.0;
+    private static final double SCALE_FACTOR = 0.05;
+
     @Id
-    private Long userId; // @GeneratedValue 없음 (User의 ID를 그대로 PK로 꽂아 1:1 매핑)
+    private Long userId;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @MapsId // 유저 식별자를 PK 겸 FK로 사용 (기존 스키마 구조 반영)
+    @MapsId
     @JoinColumn(name = "user_id")
     private User user;
 
@@ -26,7 +31,7 @@ public class UserGameStatus {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "current_exercise_id")
-    private Exercise currentExercise = null; // 운동 안 할 때는 null!
+    private Exercise currentExercise = null;
 
     @Column(name = "is_working", nullable = false)
     private Boolean isWorking = false;
@@ -36,6 +41,12 @@ public class UserGameStatus {
 
     @Column(name = "start_longitude")
     private Double startLongitude;
+
+    // ===== 반지름 (파생값, DB에 저장하지 않음) =====
+    @Transient
+    public double getRadius() {
+        return BASE_RADIUS + this.totalScore * SCALE_FACTOR;
+    }
 
     // 편의 비즈니스 메서드
     public void startExercise(Exercise exercise, Double lat, Double lng) {

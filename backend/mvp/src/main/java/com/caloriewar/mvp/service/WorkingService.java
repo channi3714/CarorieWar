@@ -17,8 +17,6 @@ import java.util.List;
 public class WorkingService {
 
     private static final int SCORE_PER_CALL = 10;
-    private static final double BASE_RADIUS = 5.0;
-    private static final double SCALE_FACTOR = 0.05;
 
     // 이벤트 우선순위 (높을수록 우선)
     private static final int PRIORITY_NONE = 0;
@@ -39,10 +37,10 @@ public class WorkingService {
             throw new NotFoundException("선택된 운동이 없습니다.");
         }
         return new WorkingInfoResponse(
-            status.getCurrentExercise().getId(),
-            status.getCurrentExercise().getName(),
-            status.getTotalScore(),
-            status.getCurrentExercise().getCaloriesPerFiveMin()
+                status.getCurrentExercise().getId(),
+                status.getCurrentExercise().getName(),
+                status.getTotalScore(),
+                status.getCurrentExercise().getCaloriesPerFiveMin()
         );
     }
 
@@ -71,11 +69,11 @@ public class WorkingService {
 
         double myLat = mine.getStartLatitude();
         double myLng = mine.getStartLongitude();
-        double myRadius = BASE_RADIUS + mine.getTotalScore() * SCALE_FACTOR;
+        double myRadius = mine.getRadius();
 
         List<UserGameStatus> others = userGameStatusRepository.findByIsWorkingTrue().stream()
-            .filter(s -> !s.getUserId().equals(userId))
-            .toList();
+                .filter(s -> !s.getUserId().equals(userId))
+                .toList();
 
         List<NearbyPlayerDto> nearbyPlayers = new ArrayList<>();
         String bestEventType = null;
@@ -85,15 +83,15 @@ public class WorkingService {
         for (UserGameStatus other : others) {
             double theirLat = other.getStartLatitude();
             double theirLng = other.getStartLongitude();
-            double theirRadius = BASE_RADIUS + other.getTotalScore() * SCALE_FACTOR;
+            double theirRadius = other.getRadius();
             double distance = haversine(myLat, myLng, theirLat, theirLng);
 
             nearbyPlayers.add(new NearbyPlayerDto(
-                other.getUser().getNickname(),
-                theirLat,
-                theirLng,
-                other.getTotalScore(),
-                other.getTeamColor()
+                    other.getUser().getNickname(),
+                    theirLat,
+                    theirLng,
+                    theirRadius,
+                    other.getTeamColor()
             ));
 
             // 이벤트 판정
@@ -121,7 +119,7 @@ public class WorkingService {
             }
         }
 
-        return new ScoreResponse(mine.getTotalScore(), nearbyPlayers, bestEventType, bestOpponentNick);
+        return new ScoreResponse(mine.getTotalScore(), myRadius, nearbyPlayers, bestEventType, bestOpponentNick);
     }
 
     // Haversine 공식 — 두 좌표 사이 거리(미터)
@@ -130,8 +128,8 @@ public class WorkingService {
         double dLat = Math.toRadians(lat2 - lat1);
         double dLng = Math.toRadians(lng2 - lng1);
         double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-            + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-            * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
