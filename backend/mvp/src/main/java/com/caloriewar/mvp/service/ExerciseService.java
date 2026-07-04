@@ -107,4 +107,23 @@ public class ExerciseService {
         ue.setIsSelected(false);
         userExerciseRepository.save(ue);
     }
+
+    @Transactional
+    public void deleteExercise(Long userId, Long exerciseId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        Exercise exercise = exerciseRepository.findById(exerciseId)
+            .orElseThrow(() -> new NotFoundException("존재하지 않는 운동입니다."));
+
+        UserExercise ue = userExerciseRepository.findByUserAndExercise(user, exercise)
+            .orElseThrow(() -> new NotFoundException("내 리스트에 없는 운동입니다."));
+
+        // 삭제하는 운동이 현재 선택된 운동이면 GameStatus도 초기화
+        if (Boolean.TRUE.equals(ue.getIsSelected())) {
+            UserGameStatus status = userGameStatusRepository.findById(userId).orElseThrow();
+            status.setCurrentExercise(null);
+            userGameStatusRepository.save(status);
+        }
+
+        userExerciseRepository.delete(ue);
+    }
 }

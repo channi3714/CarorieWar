@@ -6,11 +6,11 @@ import com.caloriewar.mvp.dto.response.NearbyPlayerDto;
 import com.caloriewar.mvp.dto.response.ScoreResponse;
 import com.caloriewar.mvp.dto.response.WorkingInfoResponse;
 import com.caloriewar.mvp.exception.NotFoundException;
+import com.caloriewar.mvp.repository.UserExerciseRepository;
 import com.caloriewar.mvp.repository.UserGameStatusRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -18,16 +18,18 @@ public class WorkingService {
 
     private static final int SCORE_PER_CALL = 10;
 
-    // 이벤트 우선순위 (높을수록 우선)
     private static final int PRIORITY_NONE = 0;
     private static final int PRIORITY_MEETING = 1;
     private static final int PRIORITY_CONQUERED_BY = 2;
     private static final int PRIORITY_CONQUERED = 3;
 
     private final UserGameStatusRepository userGameStatusRepository;
+    private final UserExerciseRepository userExerciseRepository;
 
-    public WorkingService(UserGameStatusRepository userGameStatusRepository) {
+    public WorkingService(UserGameStatusRepository userGameStatusRepository,
+                          UserExerciseRepository userExerciseRepository) {
         this.userGameStatusRepository = userGameStatusRepository;
+        this.userExerciseRepository = userExerciseRepository;
     }
 
     @Transactional(readOnly = true)
@@ -54,6 +56,22 @@ public class WorkingService {
     }
 
     @Transactional
+    public void stopWorking(Long userId) {
+        UserGameStatus status = userGameStatusRepository.findById(userId).orElseThrow();
+
+        // 선택된 운동 isSelected → false
+        userExerciseRepository.findByUserAndIsSelectedTrue(status.getUser())
+            .ifPresent(ue -> {
+                ue.setIsSelected(false);
+                userExerciseRepository.save(ue);
+            });
+
+        status.setIsWorking(false);
+        status.setCurrentExercise(null);
+        userGameStatusRepository.save(status);
+    }
+
+    @Transactional
     public ScoreResponse addScore(Long userId) {
         UserGameStatus mine = userGameStatusRepository.findById(userId).orElseThrow();
 
@@ -61,66 +79,86 @@ public class WorkingService {
             throw new NotFoundException("선택된 운동이 없습니다.");
         }
         if (mine.getStartLatitude() == null || mine.getStartLongitude() == null) {
-            throw new NotFoundException("운동 시작 위치가 설정되지 않았습니다.");
+            throw new NotFoundException("운동 시작 위치가 고정되지 않았습니다.");
         }
 
+        // 1. 내 점수 적립
         mine.addScore(SCORE_PER_CALL);
         userGameStatusRepository.save(mine);
 
-        double myLat = mine.getStartLatitude();
-        double myLng = mine.getStartLongitude();
-        double myRadius = mine.getRadius();
+        // 2. 운동 중인 전체 유저 조회
+        List<UserGameStatus> allWorking = userGameStatusRepository.findByIsWorkingTrue();
 
-        List<UserGameStatus> others = userGameStatusRepository.findByIsWorkingTrue().stream()
-                .filter(s -> !s.getUserId().equals(userId))
-                .toList();
+        // 3. 모든 쌍(pair) 충돌 판정 — 나 vs 남, 남 vs 남 전부 처리
+        String myEventType = null;
+        String myEventOpponent = null;
+        int myBestPriority = PRIORITY_NONE;
 
-        List<NearbyPlayerDto> nearbyPlayers = new ArrayList<>();
-        String bestEventType = null;
-        String bestOpponentNick = null;
-        int bestPriority = PRIORITY_NONE;
+        for (int i = 0; i < allWorking.size(); i++) {
+            for (int j = i + 1; j < allWorking.size(); j++) {
+                UserGameStatus a = allWorking.get(i);
+                UserGameStatus b = allWorking.get(j);
 
-        for (UserGameStatus other : others) {
-            double theirLat = other.getStartLatitude();
-            double theirLng = other.getStartLongitude();
-            double theirRadius = other.getRadius();
-            double distance = haversine(myLat, myLng, theirLat, theirLng);
+                double radiusA = a.getRadius();
+                double radiusB = b.getRadius();
+                double distance = haversine(
+                    a.getStartLatitude(), a.getStartLongitude(),
+                    b.getStartLatitude(), b.getStartLongitude()
+                );
 
-            nearbyPlayers.add(new NearbyPlayerDto(
-                    other.getUser().getNickname(),
-                    theirLat,
-                    theirLng,
-                    other.getTotalScore(),
-                    theirRadius,
-                    other.getTeamColor()
-            ));
+                boolean aConquersB = distance <= radiusA && radiusA >= radiusB;
+                boolean bConquersA = distance <= radiusB && radiusB > radiusA;
+                boolean meeting = !aConquersB && !bConquersA && distance <= radiusA + radiusB;
 
-            // 이벤트 판정
-            String eventType = null;
-            if (distance <= myRadius && myRadius >= theirRadius) {
-                // 내 반지름이 상대 중심까지 도달 + 내가 더 크거나 같음 → 정복
-                other.setTeamColor(mine.getTeamColor());
-                userGameStatusRepository.save(other);
-                eventType = "CONQUERED";
-            } else if (distance <= theirRadius && theirRadius > myRadius) {
-                // 상대 반지름이 내 중심까지 도달 + 상대가 더 큼 → 피정복
-                mine.setTeamColor(other.getTeamColor());
-                userGameStatusRepository.save(mine);
-                eventType = "CONQUERED_BY_OPPONENT";
-            } else if (distance <= myRadius + theirRadius) {
-                // 원이 겹침 → 만남
-                eventType = "MEETING";
-            }
+                // 팀 색 변경 (쌍 관계없이 적용)
+                if (aConquersB) {
+                    b.setTeamColor(a.getTeamColor());
+                    userGameStatusRepository.save(b);
+                } else if (bConquersA) {
+                    a.setTeamColor(b.getTeamColor());
+                    userGameStatusRepository.save(a);
+                }
 
-            int priority = priority(eventType);
-            if (priority > bestPriority) {
-                bestPriority = priority;
-                bestEventType = eventType;
-                bestOpponentNick = other.getUser().getNickname();
+                // 나(호출자)가 포함된 쌍이면 이벤트 집계
+                boolean iAmA = a.getUserId().equals(userId);
+                boolean iAmB = b.getUserId().equals(userId);
+                if (!iAmA && !iAmB) continue;
+
+                String myEvent = null;
+                if (aConquersB) {
+                    myEvent = iAmA ? "CONQUERED" : "CONQUERED_BY_OPPONENT";
+                } else if (bConquersA) {
+                    myEvent = iAmB ? "CONQUERED" : "CONQUERED_BY_OPPONENT";
+                } else if (meeting) {
+                    myEvent = "MEETING";
+                }
+
+                int priority = priority(myEvent);
+                if (priority > myBestPriority) {
+                    myBestPriority = priority;
+                    myEventType = myEvent;
+                    myEventOpponent = iAmA
+                        ? b.getUser().getNickname()
+                        : a.getUser().getNickname();
+                }
             }
         }
 
-        return new ScoreResponse(mine.getTotalScore(), myRadius, nearbyPlayers, bestEventType, bestOpponentNick);
+        // 4. 응답 조립
+        double myRadius = mine.getRadius();
+        List<NearbyPlayerDto> nearbyPlayers = allWorking.stream()
+            .filter(s -> !s.getUserId().equals(userId))
+            .map(s -> new NearbyPlayerDto(
+                s.getUser().getNickname(),
+                s.getStartLatitude(),
+                s.getStartLongitude(),
+                s.getTotalScore(),
+                s.getRadius(),
+                s.getTeamColor()
+            ))
+            .toList();
+
+        return new ScoreResponse(mine.getTotalScore(), myRadius, nearbyPlayers, myEventType, myEventOpponent);
     }
 
     // Haversine 공식 — 두 좌표 사이 거리(미터)

@@ -30,7 +30,7 @@ public class HomeService {
                         s.getStartLatitude(),
                         s.getStartLongitude(),
                         s.getTotalScore(),
-                        null,           // radius는 /working/score 전용
+                        calculateRadius(s.getTotalScore()),
                         s.getTeamColor()
                 ))
                 .toList();
