@@ -2,17 +2,10 @@
 import axios from 'axios';
 
 const Client = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080',
   timeout: 10000,
+  withCredentials: true,  // 세션 쿠키 자동 전송
 });
 
-// 요청마다 토큰 자동 첨부
-Client.interceptors.request.use((config) => {
-  const Token = localStorage.getItem('accessToken');
-  if (Token) {
-    config.headers.Authorization = `Bearer ${Token}`;
-  }
-  return config;
-});
 
 export default Client;

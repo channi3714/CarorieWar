@@ -24,14 +24,17 @@ public class HomeService {
 
         List<NearbyPlayerDto> nearbyPlayers = userGameStatusRepository.findByIsWorkingTrue().stream()
             .filter(s -> !s.getUserId().equals(userId))
-            .map(s -> new NearbyPlayerDto(
-                s.getUser().getNickname(),
-                s.getStartLatitude(),
-                s.getStartLongitude(),
-                s.getTotalScore(),
-                null,           // radius는 /working/score 전용
-                s.getTeamColor()
-            ))
+            .map(s -> {
+                double radius = 5.0 + s.getTotalScore() * 0.05;
+                return new NearbyPlayerDto(
+                    s.getUser().getNickname(),
+                    s.getStartLatitude(),
+                    s.getStartLongitude(),
+                    s.getTotalScore(),
+                    radius,
+                    s.getTeamColor()
+                );
+            })
             .toList();
 
         return new HomeResponse(

@@ -9,16 +9,18 @@ const useSessionStore = create((set) => ({
   myRadius: 0,
   players: [],
 
-  startSession: (exercise, center) =>
+  startSession: (exercise, center) => {
+    const score = exercise?.currentScore ?? 0;
     set({
       active: true,
       startedAt: Date.now(),
       exercise,
       center,
-      totalScore: exercise?.currentScore ?? 0,
-      myRadius: 0,
+      totalScore: score,
+      myRadius: 5 + score * 0.05,  // 이전 점수로 초기 반지름 계산
       players: [],
-    }),
+    });
+  },
 
   applyScore: ({ totalScore, myRadius, players }) =>
     set({ totalScore, myRadius, players }),

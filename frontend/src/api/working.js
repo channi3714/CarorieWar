@@ -3,7 +3,7 @@ import { colorOf } from './sports';
 import { iconOf } from '../assets/icons';
 
 // 백엔드 준비 전에는 true, 연동 시 false
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 // 목업 세션 상태 ( score 폴링마다 점수 · 반지름 증가 )
 const MockSession = {
@@ -66,7 +66,7 @@ export async function postScore() {
       eventOpponentNickname: null,
     };
   }
-  const { data } = await Client.post('/working/score');
+  const { data } = await Client.get('/working/score');
   return data.data;
 }
 
@@ -76,7 +76,7 @@ export async function finishWorking(payload) {
     await delay();
     return { ...payload, saved: true };
   }
-  const { data } = await Client.post('/working', payload);
+  const { data } = await Client.post('/working/stop');
   return data.data;
 }
 

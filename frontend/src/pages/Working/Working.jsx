@@ -126,10 +126,11 @@ function Working() {
     navigate(ROUTES.HOME, { replace: true });
   };
 
-  const MyCircle = center
+  const circleCenter = center ?? coords;
+  const MyCircle = circleCenter
     ? {
-        lat: center.lat,
-        lng: center.lng,
+        lat: circleCenter.lat,
+        lng: circleCenter.lng,
         radius: myRadius,
         color: '#4CAF50',
         label: `내가 ${exercise?.name ?? ''} 중`,
