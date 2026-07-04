@@ -4,6 +4,7 @@ import com.caloriewar.mvp.dto.request.StartWorkingRequest;
 import com.caloriewar.mvp.dto.response.ApiResponse;
 import com.caloriewar.mvp.dto.response.ScoreResponse;
 import com.caloriewar.mvp.dto.response.WorkingInfoResponse;
+import com.caloriewar.mvp.exception.AuthException;
 import com.caloriewar.mvp.service.WorkingService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.ResponseEntity;
@@ -22,24 +23,30 @@ public class WorkingController {
     @GetMapping
     public ResponseEntity<ApiResponse<WorkingInfoResponse>> getWorkingInfo(HttpSession session) {
         Long userId = (Long) session.getAttribute("userId");
-        WorkingInfoResponse data = workingService.getWorkingInfo(userId);
-        return ResponseEntity.ok(ApiResponse.success(200, "운동 화면 조회 성공", data));
+        if (userId == null) throw new AuthException("로그인이 필요합니다.");
+        return ResponseEntity.ok(ApiResponse.success(200, "운동 화면 조회 성공", workingService.getWorkingInfo(userId)));
     }
 
     @PostMapping("/start")
-    public ResponseEntity<ApiResponse<Void>> startWorking(
-        @RequestBody StartWorkingRequest request,
-        HttpSession session
-    ) {
+    public ResponseEntity<ApiResponse<Void>> startWorking(@RequestBody StartWorkingRequest request, HttpSession session) {
         Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) throw new AuthException("로그인이 필요합니다.");
         workingService.startWorking(userId, request);
         return ResponseEntity.ok(ApiResponse.success(200, "운동 시작 위치 저장 완료"));
     }
 
-    @PostMapping("/score")
+    @GetMapping("/score")
     public ResponseEntity<ApiResponse<ScoreResponse>> addScore(HttpSession session) {
         Long userId = (Long) session.getAttribute("userId");
-        ScoreResponse data = workingService.addScore(userId);
-        return ResponseEntity.ok(ApiResponse.success(200, "점수 적립 완료", data));
+        if (userId == null) throw new AuthException("로그인이 필요합니다.");
+        return ResponseEntity.ok(ApiResponse.success(200, "점수 적립 성공", workingService.addScore(userId)));
+    }
+
+    @PostMapping("/stop")
+    public ResponseEntity<ApiResponse<Void>> stopWorking(HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) throw new AuthException("로그인이 필요합니다.");
+        workingService.stopWorking(userId);
+        return ResponseEntity.ok(ApiResponse.success(200, "운동 종료 완료"));
     }
 }
