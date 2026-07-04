@@ -151,17 +151,23 @@ public class WorkingService {
         double myRadius = BASE_RADIUS + mine.getTotalScore() * SCALE_FACTOR;
         List<NearbyPlayerDto> nearbyPlayers = allWorking.stream()
             .filter(s -> !s.getUserId().equals(userId))
-            .map(s -> new NearbyPlayerDto(
-                s.getUser().getNickname(),
-                s.getStartLatitude(),
-                s.getStartLongitude(),
-                null,
-                BASE_RADIUS + s.getTotalScore() * SCALE_FACTOR,
-                s.getTeamColor()
-            ))
+            .map(s -> {
+                Long exId = s.getCurrentExercise() != null ? s.getCurrentExercise().getId() : null;
+                String exName = s.getCurrentExercise() != null ? s.getCurrentExercise().getName() : null;
+                return new NearbyPlayerDto(
+                    s.getUser().getNickname(),
+                    s.getStartLatitude(),
+                    s.getStartLongitude(),
+                    null,
+                    BASE_RADIUS + s.getTotalScore() * SCALE_FACTOR,
+                    s.getTeamColor(),
+                    exId,
+                    exName
+                );
+            })
             .toList();
 
-        return new ScoreResponse(mine.getTotalScore(), myRadius, nearbyPlayers, myEventType, myEventOpponent);
+        return new ScoreResponse(mine.getTotalScore(), myRadius, mine.getTeamColor(), nearbyPlayers, myEventType, myEventOpponent);
     }
 
     // Haversine 공식 — 두 좌표 사이 거리(미터)

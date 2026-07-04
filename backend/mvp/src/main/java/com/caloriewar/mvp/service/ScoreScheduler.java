@@ -16,12 +16,17 @@ public class ScoreScheduler {
         this.userGameStatusRepository = userGameStatusRepository;
     }
 
-    // 3초마다 isWorking=true인 모든 유저 점수 +10
+    // 3초마다 isWorking=true인 모든 유저 점수 적립 (운동별 칼로리 기반)
     @Scheduled(fixedDelay = 3000)
     @Transactional
     public void addScoreToAllWorking() {
         var workingUsers = userGameStatusRepository.findByIsWorkingTrue();
-        workingUsers.forEach(s -> s.addScore(SCORE_PER_TICK));
+        workingUsers.forEach(s -> {
+            int tick = (s.getCurrentExercise() != null)
+                ? Math.max(1, s.getCurrentExercise().getCaloriesPerFiveMin() / 5)
+                : SCORE_PER_TICK;
+            s.addScore(tick);
+        });
         userGameStatusRepository.saveAll(workingUsers);
     }
 }
