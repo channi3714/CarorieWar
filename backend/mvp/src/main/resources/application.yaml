@@ -3,7 +3,7 @@ spring:
     name: mvp
   datasource:
     # 프로젝트 폴더 내부에 'calorie_db'라는 파일로 데이터를 물리 저장합니다.
-    url: jdbc:h2:file:./calorie_db;DB_CLOSE_DELAY=-1;NON_KEYWORDS=KEY,VALUE
+    url: jdbc:h2:file:./calorie_db;DB_CLOSE_DELAY=-1;NON_KEYWORDS=KEY,VALUE;AUTO_SERVER=TRUE
     driver-class-name: org.h2.Driver
     username: cw
     password: cw00
