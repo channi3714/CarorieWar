@@ -10,6 +10,7 @@ import java.util.List;
 public class HomeResponse {
     private String nickname;
     private Integer totalScore;
+    private Double radius;
     private String teamColor;
     private List<NearbyPlayerDto> nearbyPlayers;
 }

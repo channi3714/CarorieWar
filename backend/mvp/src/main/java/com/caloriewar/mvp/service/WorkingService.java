@@ -11,15 +11,12 @@ import com.caloriewar.mvp.repository.UserGameStatusRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class WorkingService {
 
     private static final int SCORE_PER_CALL = 10;
-    private static final double BASE_RADIUS = 5.0;
-    private static final double SCALE_FACTOR = 0.05;
 
     private static final int PRIORITY_NONE = 0;
     private static final int PRIORITY_MEETING = 1;
@@ -42,10 +39,10 @@ public class WorkingService {
             throw new NotFoundException("선택된 운동이 없습니다.");
         }
         return new WorkingInfoResponse(
-            status.getCurrentExercise().getId(),
-            status.getCurrentExercise().getName(),
-            status.getTotalScore(),
-            status.getCurrentExercise().getCaloriesPerFiveMin()
+                status.getCurrentExercise().getId(),
+                status.getCurrentExercise().getName(),
+                status.getTotalScore(),
+                status.getCurrentExercise().getCaloriesPerFiveMin()
         );
     }
 
@@ -102,8 +99,8 @@ public class WorkingService {
                 UserGameStatus a = allWorking.get(i);
                 UserGameStatus b = allWorking.get(j);
 
-                double radiusA = BASE_RADIUS + a.getTotalScore() * SCALE_FACTOR;
-                double radiusB = BASE_RADIUS + b.getTotalScore() * SCALE_FACTOR;
+                double radiusA = a.getRadius();
+                double radiusB = b.getRadius();
                 double distance = haversine(
                     a.getStartLatitude(), a.getStartLongitude(),
                     b.getStartLatitude(), b.getStartLongitude()
@@ -148,15 +145,15 @@ public class WorkingService {
         }
 
         // 4. 응답 조립
-        double myRadius = BASE_RADIUS + mine.getTotalScore() * SCALE_FACTOR;
+        double myRadius = mine.getRadius();
         List<NearbyPlayerDto> nearbyPlayers = allWorking.stream()
             .filter(s -> !s.getUserId().equals(userId))
             .map(s -> new NearbyPlayerDto(
                 s.getUser().getNickname(),
                 s.getStartLatitude(),
                 s.getStartLongitude(),
-                null,
-                BASE_RADIUS + s.getTotalScore() * SCALE_FACTOR,
+                s.getTotalScore(),
+                s.getRadius(),
                 s.getTeamColor()
             ))
             .toList();
@@ -170,8 +167,8 @@ public class WorkingService {
         double dLat = Math.toRadians(lat2 - lat1);
         double dLng = Math.toRadians(lng2 - lng1);
         double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-            + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-            * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
