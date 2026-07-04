@@ -43,6 +43,7 @@ function Working() {
   const [error, setError] = useState('');
   const startedFixRef = useRef(false);
   const eventTimerRef = useRef(null); // 이벤트 토스트 자동 사라짐 타이머
+  const lastEventKeyRef = useRef(null); // 직전에 띄운 이벤트 ( 같은 이벤트 반복 방지 )
 
   // 진입 - 선택된 운동 확인
   useEffect(() => {
@@ -103,10 +104,18 @@ function Working() {
           myColor: Res.myTeamColor, // 정복당하면 서버가 상대 색으로 바꿔서 내려줌
         });
         // 충돌/정복 이벤트 → 토스트로 띄우고 2.5초 뒤 자동으로 사라지게
+        // 서버는 원이 겹쳐 있는 동안 매 폴링마다 같은 eventType 을 내려주므로
+        // 직전과 동일한 이벤트면 다시 띄우지 않고, 상태가 풀린 뒤 재충돌 시에만 알림
         if (Res.eventType) {
-          setEvent({ type: Res.eventType, opponent: Res.eventOpponentNickname });
-          clearTimeout(eventTimerRef.current);
-          eventTimerRef.current = setTimeout(() => setEvent(null), 2500);
+          const key = `${Res.eventType}:${Res.eventOpponentNickname ?? ''}`;
+          if (key !== lastEventKeyRef.current) {
+            lastEventKeyRef.current = key;
+            setEvent({ type: Res.eventType, opponent: Res.eventOpponentNickname });
+            clearTimeout(eventTimerRef.current);
+            eventTimerRef.current = setTimeout(() => setEvent(null), 2500);
+          }
+        } else {
+          lastEventKeyRef.current = null; // 이벤트 해제 → 다음 충돌은 새 알림으로
         }
       } catch {
         /* 폴링 실패는 조용히 무시하고 다음 주기 재시도 */
