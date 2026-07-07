@@ -20,6 +20,7 @@
 
 ## 🏗️ 기술 스택
 
+### Frontend
 - **React 19** + **Vite 8**
 - **React Router 7** — 라우팅
 - **Zustand** — 전역 상태 관리 (인증 / 세션 / 운동)
@@ -27,20 +28,39 @@
 - **Leaflet / react-leaflet** + **Kakao Map** — 지도 및 영역 시각화
 - **axios** — API 통신 (세션 쿠키 기반 인증)
 
+### Backend
+- **Spring Boot 4.1** + **Java 21**
+- **Spring Data JPA** — ORM
+- **H2 Database** — 파일 기반 내장 DB (데모용)
+- **HttpSession** — 세션 기반 인증 (JWT 미사용)
+- **Spring Scheduler** — 3초마다 전체 유저 점수 적립 및 충돌 감지
+
 ---
 
 ## 📁 프로젝트 구조
 
 ```
-frontend/
-└── src/
-    ├── api/                 # axios 클라이언트 & API 모듈
-    ├── components/          # 공통 · 지도(map) · 운동(work) 컴포넌트
-    ├── pages/               # Login, Home, WorkAdd, Working, Ranking, MyPage
-    ├── store/               # Zustand 스토어 (auth, session, work)
-    ├── hooks/               # useGeolocation, useKakaoLoader, useTimer
-    ├── constants/           # 라우트 상수
-    └── utils/               # calorie, format 유틸
+CarorieWar/
+├── frontend/
+│   └── src/
+│       ├── api/            # axios 클라이언트 & API 모듈
+│       ├── components/     # 공통 · 지도(map) · 운동(work) 컴포넌트
+│       ├── pages/          # Login, Home, WorkAdd, Working, Ranking, MyPage
+│       ├── store/          # Zustand 스토어 (auth, session, work)
+│       ├── hooks/          # useGeolocation, useKakaoLoader, useTimer
+│       ├── constants/      # 라우트 상수
+│       └── utils/          # calorie, format 유틸
+│
+└── backend/mvp/
+    └── src/main/java/com/caloriewar/mvp/
+        ├── controller/     # AuthController, HomeController, WorkingController, ExerciseController
+        ├── service/        # AuthService, HomeService, WorkingService, ExerciseService, ScoreScheduler
+        ├── domain/         # User, UserGameStatus, UserExercise, Exercise
+        ├── repository/     # Spring Data JPA 레포지토리
+        ├── dto/            # 요청/응답 DTO
+        ├── exception/      # GlobalExceptionHandler, 커스텀 예외
+        ├── config/         # CORS 설정
+        └── DataInitializer.java  # 서버 시작 시 더미 데이터 자동 세팅
 ```
 
 ---
@@ -49,6 +69,21 @@ frontend/
 
 ### 사전 요구사항
 - Node.js 18+
+- JDK 21+
+
+### 백엔드 실행
+
+```bash
+cd backend/mvp
+./gradlew bootRun        # Mac/Linux
+gradlew.bat bootRun      # Windows
+```
+
+- API 서버: `http://localhost:8080`
+- H2 콘솔: `http://localhost:8080/h2-console`
+  - JDBC URL: `jdbc:h2:file:./calorie_db`
+  - username: `cw` / password: `cw00`
+- 서버 시작 시 더미 유저 5명이 자동으로 생성됩니다.
 
 ### 프론트엔드 실행
 
@@ -59,11 +94,32 @@ npm run dev
 ```
 
 - 개발 서버: `http://localhost:5173`
-- API 서버 주소는 [vite.config.js](frontend/vite.config.js)의 프록시(`/api`) 설정 또는 `.env`의 `VITE_API_BASE_URL`로 지정합니다.
+- API 서버 주소는 `.env`의 `VITE_API_BASE_URL`로 지정합니다. (`http://localhost:8080`)
+
+### 백엔드 데이터 초기화
+
+```bash
+# backend/mvp 폴더에서 DB 파일 삭제 후 서버 재시작
+rm -f calorie_db.mv.db calorie_db.trace.db
+./gradlew bootRun
+```
 
 ---
 
-## 📝 참고
+## 📡 주요 API
 
-- 인증은 세션 쿠키(`withCredentials`)로 처리됩니다.
-- 이 프로젝트는 해커톤(복커톤) 출품작으로, MVP 시연에 초점이 맞춰져 있습니다.
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| POST | `/auth/login` | 로그인 (닉네임+비밀번호, 없으면 자동 가입) |
+| GET | `/home` | 홈 화면 — 내 정보 + 주변 운동 중인 플레이어 |
+| GET | `/working` | 운동 화면 진입 정보 (선택된 운동 확인) |
+| POST | `/working/start` | 운동 시작 위치 고정 |
+| GET | `/working/score` | 점수 폴링 — 충돌 판정 및 이벤트 응답 |
+| POST | `/working/stop` | 운동 종료 |
+| GET | `/my-sports` | 내 운동 목록 조회 |
+| POST | `/my-sports/select` | 운동 선택 |
+| DELETE | `/my-sports/{exerciseId}` | 내 운동 목록에서 삭제 |
+| GET | `/sports` | 전체 운동 종목 조회 |
+| POST | `/sports` | 운동 종목 추가 |
+
+---
